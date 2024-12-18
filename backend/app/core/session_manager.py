@@ -1,4 +1,3 @@
-```python
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 from .config import settings
@@ -53,4 +52,3 @@ class SessionManager:
     def end_session(self, session_id: str) -> bool:
         """Finalizar una sesión"""
         return self.db.remove_session(session_id)
-```
