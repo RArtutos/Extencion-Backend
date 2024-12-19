@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, accounts, proxies, analytics
+from .routers import auth, accounts, proxies, analytics, sessions
 from .routers.admin import users, analytics as admin_analytics, presets, accounts as admin_accounts
 from .core.config import settings
 
@@ -19,6 +19,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(accounts.router, prefix="/api/accounts", tags=["accounts"])
+app.include_router(sessions.router, prefix="/api/sessions", tags=["sessions"])
 app.include_router(proxies.router, prefix="/api/proxies", tags=["proxies"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 app.include_router(users.router, prefix="/api/admin/users", tags=["admin-users"])
