@@ -76,3 +76,37 @@ class AccountRepository(BaseRepository):
             self._write_data(data)
             return account
         return None
+
+    def delete(self, account_id: int) -> bool:
+        """Delete an account and all its associations"""
+        data = self._read_data()
+        initial_count = len(data.get("accounts", []))
+        
+        # Remove the account
+        data["accounts"] = [
+            acc for acc in data.get("accounts", [])
+            if acc["id"] != account_id
+        ]
+        
+        # Remove all user-account associations
+        data["user_accounts"] = [
+            ua for ua in data.get("user_accounts", [])
+            if ua["account_id"] != account_id
+        ]
+        
+        # Remove all sessions for this account
+        data["sessions"] = [
+            s for s in data.get("sessions", [])
+            if s.get("account_id") != account_id
+        ]
+        
+        # Remove all analytics data for this account
+        data["analytics"] = [
+            a for a in data.get("analytics", [])
+            if a.get("account_id") != account_id
+        ]
+        
+        if len(data["accounts"]) < initial_count:
+            self._write_data(data)
+            return True
+        return False
