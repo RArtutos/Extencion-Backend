@@ -32,8 +32,22 @@ class SessionRepository(BaseRepository):
         session_data["last_activity"] = datetime.utcnow().isoformat()
         session_data["active"] = True
         
+        # Verificar límites de sesiones activas
+        active_sessions = self.get_active_sessions(session_data["account_id"])
+        account = next(
+            (a for a in data.get("accounts", []) 
+             if a["id"] == session_data["account_id"]),
+            None
+        )
+        
+        if account and len(active_sessions) >= account.get("max_concurrent_users", 1):
+            return False
+            
         data["sessions"].append(session_data)
         self._write_data(data)
+        
+        # Actualizar analytics
+        self._update_analytics(data, session_data, "session_start")
         return True
 
     def update_session_activity(self, session_id: str, activity_data: Dict) -> bool:
@@ -48,6 +62,9 @@ class SessionRepository(BaseRepository):
             session.update(activity_data)
             session["last_activity"] = datetime.utcnow().isoformat()
             self._write_data(data)
+            
+            # Actualizar analytics
+            self._update_analytics(data, session, "session_activity")
             return True
         return False
 
@@ -68,8 +85,29 @@ class SessionRepository(BaseRepository):
                 session["duration"] = (end - start).total_seconds()
             
             self._write_data(data)
+            
+            # Actualizar analytics
+            self._update_analytics(data, session, "session_end")
             return True
         return False
+
+    def _update_analytics(self, data: Dict, session: Dict, event_type: str):
+        """Update analytics data"""
+        if "analytics" not in data:
+            data["analytics"] = []
+            
+        analytics_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": event_type,
+            "account_id": session["account_id"],
+            "user_id": session["user_id"],
+            "session_id": session["id"],
+            "domain": session.get("domain"),
+            "duration": session.get("duration")
+        }
+        
+        data["analytics"].append(analytics_entry)
+        self._write_data(data)
 
     def _is_session_active(self, session: Dict) -> bool:
         """Check if a session is still active based on last activity"""
